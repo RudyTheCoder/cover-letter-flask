@@ -6,7 +6,7 @@ from datetime import datetime
 
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 from dotenv import load_dotenv
-from openai import OpenAI  # kept for future BYO-key or paid mode, not used now
+#from openai import OpenAI  # kept for future BYO-key or paid mode, not used now
 from docx import Document
 #from weasyprint import HTML  # HTML -> PDF
 # from weasyprint import HTML
