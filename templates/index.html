@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Cover Letter Studio (Flask)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f8fafc; }
+    .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .card h2 { margin: 0; font-size: 18px; }
+    .card-header { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
+    .card-content { padding: 16px; }
+    .card-footer { padding: 12px 16px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 8px; }
+    textarea { width: 100%; min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btn { background: #0ea5e9; color: #fff; border: none; padding: 10px 14px; border-radius: 10px; cursor: pointer; }
+    .btn.secondary { background: #64748b; }
+    .btn.outline { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; }
+    .muted { color: #64748b; font-size: 12px; }
+    pre.preview { white-space: pre-wrap; background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; min-height: 200px;}
+    .flash { padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid transparent; }
+    .flash.success { background:#ecfdf5; border-color:#10b981; color:#065f46; }
+    .flash.info    { background:#eff6ff; border-color:#3b82f6; color:#1e3a8a; }
+    .flash.error   { background:#fef2f2; border-color:#ef4444; color:#7f1d1d; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cover Letter Studio (Flask)</h1>
+    <p class="muted">Today: {{ today }}</p>
+
+    {# Show categorized flash messages (success/info/error) #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, m in messages %}
+          <div class="flash {{ category }}">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="grid">
+      <!-- LEFT: Inputs -->
+      <div class="card">
+        <div class="card-header"><h2>Inputs</h2></div>
+        <div class="card-content">
+          <form id="genForm" method="post" action="{{ url_for('generate') }}" enctype="multipart/form-data">
+            <!-- Job Description -->
+            <label>Job Description (paste)</label>
+            <textarea name="job_description" placeholder="Paste job description here...">{{ job_description }}</textarea>
+            <div style="margin:8px 0;">
+              <label>Or upload (.txt / .docx / .pdf):</label>
+              <input type="file" name="jd_file" accept=".txt,.md,.docx,.pdf"/>
+            </div>
+
+            <!-- Resume -->
+            <label>Resume (paste)</label>
+            <textarea name="resume_text" placeholder="Paste resume text here...">{{ resume_text }}</textarea>
+            <div style="margin:8px 0;">
+              <label>Or upload (.txt / .docx / .pdf):</label>
+              <input type="file" name="resume_file" accept=".txt,.md,.docx,.pdf"/>
+            </div>
+
+            <!-- Contact + options -->
+            <div class="row">
+              <div>
+                <label>Full name</label>
+                <input type="text" name="full_name" value=""/>
+              </div>
+              <div>
+                <label>Email</label>
+                <input type="text" name="header_email" value="{{ header_email }}"/>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:8px;">
+              <div>
+                <label>LinkedIn</label>
+                <input type="text" name="header_linkedin" value="{{ header_linkedin }}"/>
+              </div>
+              <div>
+                <label>GitHub</label>
+                <input type="text" name="header_github" value="{{ header_github }}"/>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:8px;">
+              <div>
+                <label>Portfolio</label>
+                <input type="text" name="header_portfolio" value="{{ header_portfolio }}"/>
+              </div>
+              <div>
+                <label>Word limit</label>
+                <input type="number" name="word_limit" min="0" value="{{ word_limit }}"/>
+              </div>
+            </div>
+
+
+            <!-- Letter Date (user-selectable) -->
+            <div class="row" style="margin-top:8px;">
+              <div>
+                <label>Letter date</label>
+                <input type="date" name="letter_date" value="{{ letter_date_iso }}"/>
+                <div class="muted">Defaults to today. You can change it.</div>
+              </div>
+              <div>
+                <label class="muted">&nbsp;</label>
+                <!-- empty to keep grid balanced -->
+              </div>
+            </div>
+
+            <!-- Extra instructions (optional) -->
+            <div class="row" style="margin-top:8px;">
+              <div style="grid-column: 1 / -1;">
+                <label>Additional instructions (optional)</label>
+                <textarea name="extra_instructions" placeholder="e.g., Emphasize AWS experience; keep the tone confident; keep it under 220 words; avoid buzzwords.">{{ extra_instructions }}</textarea>
+                <div class="muted">These will be incorporated into the body, but the model is still forbidden from adding a header, date, or signature.</div>
+              </div>
+            </div>
+
+            <!-- Provider selector (replaces old Model dropdown) -->
+            <div class="row" style="margin-top:8px;">
+              <div>
+                <label>Provider</label>
+                <select name="model">
+                  <option value="auto"   {% if model=='auto'   %}selected{% endif %}>Auto (Gemini → Groq)</option>
+                  <option value="gemini" {% if model=='gemini' %}selected{% endif %}>Gemini (Free Tier)</option>
+                  <option value="groq"   {% if model=='groq'   %}selected{% endif %}>Groq (Free Tier)</option>
+                </select>
+              </div>
+              <div>
+                <label class="muted"> </label>
+                <button class="btn" type="submit">Generate / Regenerate</button>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="card-footer">
+          <form method="post" action="{{ url_for('clear') }}">
+            <button class="btn outline" type="submit">Clear</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- RIGHT: Preview -->
+      <div class="card">
+        <div class="card-header"><h2>Preview</h2></div>
+        <div class="card-content">
+          <pre id="preview" class="preview">{{ preview or 'Your generated cover letter will appear here.' }}</pre>
+        </div>
+        <div class="card-footer">
+          <button class="btn outline" type="button" onclick="copyPreview()">Copy</button>
+          <form method="post" action="{{ url_for('download_pdf') }}">
+            <button class="btn" type="submit">Download PDF</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function copyPreview() {
+      const text = document.getElementById('preview').innerText;
+      if (!text || text.trim().length === 0) return;
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard!');
+      });
+    }
+  </script>
+</body>
+</html>

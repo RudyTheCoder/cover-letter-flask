@@ -1,0 +1,32 @@
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local session files
+.flask_session/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Python cache & logs
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# macOS
+.DS_Store
+
+# IDE configs
+.vscode/
+.idea/
+
+# Temporary or generated files
+*.pdf
+*.docx
+*.txt
+*.md
