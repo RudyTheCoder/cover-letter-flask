@@ -1,0 +1,8 @@
+Flask==3.0.3
+Flask-Session==0.6.0
+gunicorn==21.2.0
+google-generativeai==0.8.3
+groq==0.33.0
+python-dotenv==1.0.1
+python-docx==1.1.2
+reportlab==4.2.2
