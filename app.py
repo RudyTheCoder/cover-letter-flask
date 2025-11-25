@@ -3,6 +3,8 @@ import os
 import google.generativeai as genai
 from groq import Groq
 from datetime import datetime
+from PyPDF2 import PdfReader
+
 
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash
 from dotenv import load_dotenv
@@ -139,7 +141,7 @@ def format_preview(
     return header + body_clean + footer
 
 def extract_text_from_upload(file_storage) -> str:
-    """Return text from an uploaded .txt or .docx file."""
+    """Return text from an uploaded .txt, .md, .docx, or .pdf file."""
     if not file_storage or not file_storage.filename:
         return ""
     name = file_storage.filename.lower()
@@ -156,8 +158,19 @@ def extract_text_from_upload(file_storage) -> str:
             return "\n".join(p.text for p in doc.paragraphs)
         except Exception:
             return ""
+    elif name.endswith(".pdf"):
+        try:
+            reader = PdfReader(io.BytesIO(data))
+            chunks = []
+            for page in reader.pages:
+                text = page.extract_text() or ""
+                chunks.append(text)
+            return "\n".join(chunks)
+        except Exception:
+            return ""
     else:
         return ""
+
 
 def build_prompt_body_only(resume_text: str, job_desc: str, word_limit: int | None, extra_instructions: str = "") -> str:
     parts = [
