@@ -241,22 +241,23 @@ def generate():
     if resume_from_file:
         resume = resume_from_file
 
-    # 2) Contact + options (no defaults; if blank, they stay blank)
+    # 2) Contact + options
     header_email = (request.form.get("header_email") or "").strip()
     header_linkedin = (request.form.get("header_linkedin") or "").strip()
     header_github = (request.form.get("header_github") or "").strip()
     header_portfolio = (request.form.get("header_portfolio") or "").strip()
-
+    
     extra_instructions = request.form.get("extra_instructions", "").strip()
+    full_name = (request.form.get("full_name") or "").strip()
 
     word_limit_raw = request.form.get("word_limit", "300").strip()
-    provider_pref = (request.form.get("model", DEFAULT_MODEL) or DEFAULT_MODEL).lower()  # "auto" | "gemini" | "groq"
+    provider_pref = (request.form.get("model", DEFAULT_MODEL) or DEFAULT_MODEL).lower()
     try:
         word_limit = int(word_limit_raw) if word_limit_raw else None
     except ValueError:
         word_limit = 300
 
-    # 3) Date (from UI) -> pretty format
+    # 3) Date
     letter_date_iso = request.form.get("letter_date") or datetime.today().strftime("%Y-%m-%d")
     try:
         letter_date_pretty = datetime.strptime(letter_date_iso, "%Y-%m-%d").strftime("%B %d, %Y")
@@ -281,8 +282,84 @@ def generate():
     # 5) Greeting company (optional)
     company_name = extract_company(jd)
 
-    # 6) Prompt (BODY ONLY) + extra instructions
+    # 6) Prompt (BODY ONLY)
     prompt = build_prompt_body_only(resume, jd, word_limit, extra_instructions)
+
+    # 7) Provider Selection Logic
+    # We define the 'try_provider' helper and the 'order' list BEFORE the loop
+    def try_provider(name: str) -> str:
+        system_prompt = "You write concise, accurate cover letter bodies strictly from the user's resume text."
+        if name == "gemini":
+            return gemini_generate(prompt, system_prompt)
+        elif name == "groq":
+            return groq_generate(prompt, system_prompt)
+        else:
+            raise RuntimeError("Unknown provider")
+
+    if provider_pref == "auto":
+        order = ["gemini", "groq"]
+    elif provider_pref == "gemini":
+        order = ["gemini", "groq"]
+    elif provider_pref == "groq":
+        order = ["groq", "gemini"]
+    else:
+        order = ["gemini", "groq"]
+
+    body = ""
+    provider_used = None
+    last_err = None
+
+    # 8) The Loop (with your print debugging added)
+    for idx, p in enumerate(order):
+        try:
+            body = try_provider(p)
+            provider_used = p
+            if idx > 0:
+                flash(f"{order[0].title()} limit/error encountered; used {p.title()} instead.", "info")
+            break
+        except Exception as e:
+            # --- THIS IS THE DEBUG LINE ---
+            print(f"❌ ERROR with {p}: {e}")
+            # ------------------------------
+            last_err = e
+            continue
+
+    if not body:
+        flash(f"All providers failed: {last_err}", "error")
+        body = session.get("preview", "")
+
+    # 9) Compose formatted preview
+    if body:
+        preview = format_preview(
+            full_name=full_name,
+            email=header_email,
+            linkedin=header_linkedin,
+            github=header_github,
+            portfolio=header_portfolio,
+            date_pretty=letter_date_pretty,
+            company=company_name,
+            body=body,
+            closing="Best regards",
+        )
+        if provider_used and provider_used == provider_pref:
+            flash(f"Generated with {provider_used.title()}.", "success")
+    else:
+        preview = session.get("preview", "")
+
+    # 10) Persist fields
+    session.update({
+        "preview": preview,
+        "job_description": jd,
+        "resume_text": resume,
+        "word_limit": word_limit,
+        "model": provider_pref,
+        "letter_date_iso": letter_date_iso,
+        "extra_instructions": extra_instructions,
+    })
+
+    return redirect(url_for("index"))
+
+    
 
     # ---- Provider selection & fallback logic --------------------------------
     def try_provider(name: str) -> str:

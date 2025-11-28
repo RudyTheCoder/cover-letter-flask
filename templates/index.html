@@ -1,163 +1,218 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-50 antialiased">
 <head>
   <meta charset="utf-8"/>
-  <title>Cover Letter Studio (Flask)</title>
+  <title>Cover Letter Generator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+  
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; background: #f8fafc; }
-    .container { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
-    .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
-    @media (min-width: 1024px) { .grid { grid-template-columns: 1fr 1fr; } }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-    .card h2 { margin: 0; font-size: 18px; }
-    .card-header { padding: 14px 16px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; }
-    .card-content { padding: 16px; }
-    .card-footer { padding: 12px 16px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; gap: 8px; }
-    textarea { width: 100%; min-height: 160px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-    input[type="text"], input[type="number"], input[type="date"], select { width: 100%; padding: 8px; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .btn { background: #0ea5e9; color: #fff; border: none; padding: 10px 14px; border-radius: 10px; cursor: pointer; }
-    .btn.secondary { background: #64748b; }
-    .btn.outline { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; }
-    .muted { color: #64748b; font-size: 12px; }
-    pre.preview { white-space: pre-wrap; background: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; min-height: 200px;}
-    .flash { padding: 10px 12px; border-radius: 8px; margin-bottom: 10px; border: 1px solid transparent; }
-    .flash.success { background:#ecfdf5; border-color:#10b981; color:#065f46; }
-    .flash.info    { background:#eff6ff; border-color:#3b82f6; color:#1e3a8a; }
-    .flash.error   { background:#fef2f2; border-color:#ef4444; color:#7f1d1d; }
+    body { font-family: 'Inter', sans-serif; }
+    /* Custom scrollbar for textareas */
+    textarea::-webkit-scrollbar { width: 8px; }
+    textarea::-webkit-scrollbar-track { background: #f1f5f9; }
+    textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    /* Paper effect for preview */
+    .paper-shadow {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+                  0 2px 4px -1px rgba(0, 0, 0, 0.06),
+                  0 0 0 1px rgba(0,0,0,0.02);
+    }
   </style>
 </head>
-<body>
-  <div class="container">
-    <h1>Cover Letter Generator</h1>
-    <p class="muted">Today: {{ today }}</p>
+<body class="h-full flex flex-col">
 
-    {# Show categorized flash messages (success/info/error) #}
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center gap-2">
+          <div class="bg-indigo-600 text-white p-1.5 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <h1 class="text-xl font-bold text-slate-800 tracking-tight">Cover Letter Generator</h1>
+        </div>
+        <div class="flex items-center text-sm text-slate-500">
+          <span>{{ today }}</span>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="flex-1 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+    
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, m in messages %}
-          <div class="flash {{ category }}">{{ m }}</div>
-        {% endfor %}
+        <div class="mb-6 space-y-2">
+          {% for category, m in messages %}
+            {% if category == 'success' %}
+              <div class="p-4 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                {{ m }}
+              </div>
+            {% elif category == 'error' %}
+              <div class="p-4 rounded-lg bg-red-50 text-red-800 border border-red-200 flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                {{ m }}
+              </div>
+            {% else %}
+              <div class="p-4 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 flex items-center gap-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                {{ m }}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
       {% endif %}
     {% endwith %}
 
-    <div class="grid">
-      <!-- LEFT: Inputs -->
-      <div class="card">
-        <div class="card-header"><h2>Inputs</h2></div>
-        <div class="card-content">
-          <form id="genForm" method="post" action="{{ url_for('generate') }}" enctype="multipart/form-data">
-            <!-- Job Description -->
-            <label>Job Description (paste)</label>
-            <textarea name="job_description" placeholder="Paste job description here...">{{ job_description }}</textarea>
-            <div style="margin:8px 0;">
-              <label>Or upload (.txt / .docx / .pdf):</label>
-              <input type="file" name="jd_file" accept=".txt,.md,.docx,.pdf"/>
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+      
+      <div class="lg:col-span-5 space-y-6">
+        
+        <form id="genForm" method="post" action="{{ url_for('generate') }}" enctype="multipart/form-data" class="space-y-6">
+          
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+              <h2 class="font-semibold text-slate-800">Source Material</h2>
             </div>
-
-            <!-- Resume -->
-            <label>Resume (paste)</label>
-            <textarea name="resume_text" placeholder="Paste resume text here...">{{ resume_text }}</textarea>
-            <div style="margin:8px 0;">
-              <label>Or upload (.txt / .docx / .pdf):</label>
-              <input type="file" name="resume_file" accept=".txt,.md,.docx,.pdf"/>
-            </div>
-
-            <!-- Contact + options -->
-            <div class="row">
+            
+            <div class="p-6 space-y-6">
               <div>
-                <label>Full name</label>
-                <input type="text" name="full_name" value=""/>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Job Description</label>
+                <textarea name="job_description" rows="5" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Paste the job description here...">{{ job_description }}</textarea>
+                <div class="mt-2 flex items-center">
+                   <label class="block text-xs text-slate-500 mr-2">Or upload file:</label>
+                   <input type="file" name="jd_file" accept=".txt,.md,.docx,.pdf" class="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors"/>
+                </div>
               </div>
+
               <div>
-                <label>Email</label>
-                <input type="text" name="header_email" value="{{ header_email }}"/>
+                <label class="block text-sm font-medium text-slate-700 mb-2">Your Resume</label>
+                <textarea name="resume_text" rows="5" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="Paste your resume here...">{{ resume_text }}</textarea>
+                <div class="mt-2 flex items-center">
+                   <label class="block text-xs text-slate-500 mr-2">Or upload file:</label>
+                   <input type="file" name="resume_file" accept=".txt,.md,.docx,.pdf" class="block w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors"/>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="row" style="margin-top:8px;">
-              <div>
-                <label>LinkedIn</label>
-                <input type="text" name="header_linkedin" value="{{ header_linkedin }}"/>
-              </div>
-              <div>
-                <label>GitHub</label>
-                <input type="text" name="header_github" value="{{ header_github }}"/>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200">
+              <h2 class="font-semibold text-slate-800">Header Details</h2>
+            </div>
+            <div class="p-6 space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                  <input type="text" name="full_name" value="{{ request.form.get('full_name', '') }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Email</label>
+                  <input type="text" name="header_email" value="{{ header_email }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">LinkedIn</label>
+                  <input type="text" name="header_linkedin" value="{{ header_linkedin }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">GitHub</label>
+                  <input type="text" name="header_github" value="{{ header_github }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                </div>
+                <div class="sm:col-span-2">
+                  <label class="block text-xs font-medium text-slate-500 uppercase tracking-wider mb-1">Portfolio / Website</label>
+                  <input type="text" name="header_portfolio" value="{{ header_portfolio }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div class="row" style="margin-top:8px;">
-              <div>
-                <label>Portfolio</label>
-                <input type="text" name="header_portfolio" value="{{ header_portfolio }}"/>
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+             <div class="p-6 space-y-4">
+              <div class="grid grid-cols-2 gap-4">
+                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Word Limit</label>
+                    <input type="number" name="word_limit" min="0" value="{{ word_limit }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                 </div>
+                 <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Letter Date</label>
+                    <input type="date" name="letter_date" value="{{ letter_date_iso }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"/>
+                 </div>
               </div>
-              <div>
-                <label>Word limit</label>
-                <input type="number" name="word_limit" min="0" value="{{ word_limit }}"/>
-              </div>
-            </div>
 
-
-            <!-- Letter Date (user-selectable) -->
-            <div class="row" style="margin-top:8px;">
               <div>
-                <label>Letter date</label>
-                <input type="date" name="letter_date" value="{{ letter_date_iso }}"/>
-                <div class="muted">Defaults to today. You can change it.</div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Additional Instructions</label>
+                <textarea name="extra_instructions" rows="2" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" placeholder="e.g. Focus on leadership skills...">{{ extra_instructions }}</textarea>
               </div>
-              <div>
-                <label class="muted">&nbsp;</label>
-                <!-- empty to keep grid balanced -->
-              </div>
-            </div>
 
-            <!-- Extra instructions (optional) -->
-            <div class="row" style="margin-top:8px;">
-              <div style="grid-column: 1 / -1;">
-                <label>Additional instructions (optional)</label>
-                <textarea name="extra_instructions" placeholder="e.g., Emphasize AWS experience; keep the tone confident; keep it under 220 words; avoid buzzwords.">{{ extra_instructions }}</textarea>
-                <div class="muted">These will be incorporated into the body, but the model is still forbidden from adding a header, date, or signature.</div>
-              </div>
-            </div>
-
-            <!-- Provider selector (replaces old Model dropdown) -->
-            <div class="row" style="margin-top:8px;">
               <div>
-                <label>Provider</label>
-                <select name="model">
-                  <option value="auto"   {% if model=='auto'   %}selected{% endif %}>Auto (Gemini → Groq)</option>
-                  <option value="gemini" {% if model=='gemini' %}selected{% endif %}>Gemini (Free Tier)</option>
-                  <option value="groq"   {% if model=='groq'   %}selected{% endif %}>Groq (Free Tier)</option>
+                <label class="block text-sm font-medium text-slate-700 mb-1">AI Provider</label>
+                <select name="model" class="w-full rounded-md border-slate-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                  <option value="auto"   {% if model=='auto'   %}selected{% endif %}>Auto (Smart Fallback)</option>
+                  <option value="gemini" {% if model=='gemini' %}selected{% endif %}>Google Gemini</option>
+                  <option value="groq"   {% if model=='groq'   %}selected{% endif %}>Groq (Llama 3)</option>
                 </select>
               </div>
-              <div>
-                <label class="muted"> </label>
-                <button class="btn" type="submit">Generate / Regenerate</button>
-              </div>
             </div>
-          </form>
-        </div>
-        <div class="card-footer">
-          <form method="post" action="{{ url_for('clear') }}">
-            <button class="btn outline" type="submit">Clear</button>
-          </form>
-        </div>
+            
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end items-center gap-3">
+               <button form="clearForm" class="text-sm text-slate-500 hover:text-slate-700 px-3 py-2 rounded-md hover:bg-slate-200 transition-colors" type="submit">Reset All</button>
+               
+               <button type="submit" onclick="showLoading()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
+                 Generate Letter
+                 <svg class="ml-2 -mr-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+               </button>
+            </div>
+          </div>
+        </form>
+
+        <form id="clearForm" method="post" action="{{ url_for('clear') }}"></form>
+
       </div>
 
-      <!-- RIGHT: Preview -->
-      <div class="card">
-        <div class="card-header"><h2>Preview</h2></div>
-        <div class="card-content">
-          <pre id="preview" class="preview">{{ preview or 'Your generated cover letter will appear here.' }}</pre>
-        </div>
-        <div class="card-footer">
-          <button class="btn outline" type="button" onclick="copyPreview()">Copy</button>
-          <form method="post" action="{{ url_for('download_pdf') }}">
-            <button class="btn" type="submit">Download PDF</button>
-          </form>
+      <div class="lg:col-span-7 mt-8 lg:mt-0">
+        <div class="sticky top-24 space-y-4">
+          
+          <div class="flex items-center justify-between">
+            <h2 id="preview-header" class="text-lg font-medium text-slate-800 scroll-mt-24">Preview</h2>
+            <div class="flex space-x-2">
+              <button onclick="copyPreview()" class="inline-flex items-center px-3 py-1.5 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                <svg class="w-4 h-4 mr-1.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                Copy Text
+              </button>
+              <form method="post" action="{{ url_for('download_pdf') }}" style="margin:0;">
+                <button type="submit" class="inline-flex items-center px-3 py-1.5 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-slate-800 hover:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
+                  <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                  Download PDF
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div class="bg-white paper-shadow rounded-sm min-h-[600px] relative">
+             <pre id="preview" class="font-sans whitespace-pre-wrap text-slate-800 leading-relaxed p-10 lg:p-12 text-base">{{ preview or 'Your generated cover letter will appear here after you submit the form.' }}</pre>
+          </div>
+          
         </div>
       </div>
+    </div>
+  </main>
+
+  <div id="loadingOverlay" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 shadow-xl flex flex-col items-center animate-pulse">
+      <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600 mb-4"></div>
+      <p class="text-indigo-900 font-medium">Drafting your letter...</p>
+      <p class="text-xs text-indigo-500 mt-1">This uses sophisticated AI models.</p>
     </div>
   </div>
 
@@ -166,9 +221,45 @@
       const text = document.getElementById('preview').innerText;
       if (!text || text.trim().length === 0) return;
       navigator.clipboard.writeText(text).then(() => {
-        alert('Copied to clipboard!');
+        const btn = event.currentTarget;
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="text-green-600 font-bold">Copied!</span>';
+        setTimeout(() => { btn.innerHTML = originalHtml; }, 2000);
       });
     }
+
+    function showLoading() {
+      const jd = document.querySelector('[name="job_description"]').value;
+      const res = document.querySelector('[name="resume_text"]').value;
+      const jdFile = document.querySelector('[name="jd_file"]').value;
+      const resFile = document.querySelector('[name="resume_file"]').value;
+
+      if ((jd || jdFile) && (res || resFile)) {
+        document.getElementById('loadingOverlay').classList.remove('hidden');
+      }
+    }
+
+    // --- AUTO-SCROLL LOGIC ---
+    document.addEventListener("DOMContentLoaded", function() {
+      const previewEl = document.getElementById('preview');
+      const previewText = previewEl.innerText;
+      
+      // Check if content differs from the default placeholder
+      const isPlaceholder = previewText.includes('Your generated cover letter will appear here');
+      
+      // Check if mobile (Tailwind lg breakpoint is 1024px)
+      const isMobile = window.innerWidth < 1024;
+
+      if (!isPlaceholder && isMobile) {
+        // Add a tiny delay to ensure layout is settled
+        setTimeout(() => {
+          const header = document.getElementById('preview-header');
+          if (header) {
+            header.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300); // 300ms delay
+      }
+    });
   </script>
 </body>
 </html>
