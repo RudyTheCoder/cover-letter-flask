@@ -25,12 +25,9 @@ __pycache__/
 .vscode/
 .idea/
 
-# Temporary or generated files
+# Generated outputs
+outputs/
 *.pdf
-*.docx
-*.txt
-*.md
 
-
+# Keep runtime.txt if you use it
 !runtime.txt
-\!runtime.txt
